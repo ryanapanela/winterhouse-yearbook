@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Yearbook Scoreboard · Winterhouse Season II</title>
+<script src="content.js"></script>
+<style>
+  @font-face { font-family: Cormorant; src: url(fonts/Cormorant.ttf); font-weight: 300 700; }
+  @font-face { font-family: Vibes; src: url(fonts/GreatVibes-Regular.ttf); }
+  :root { --navy: #1E3765; --gold: #B08D3C; --paper: #FBF8F1; --line: #E3DCCB; --ok: #2E6B4F; --bad: #8C2F39; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--navy); font: 19px/1.35 Cormorant, Georgia, serif; font-weight: 500; }
+  main { max-width: 980px; margin: 0 auto; padding: 22px 18px 60px; }
+  .kicker { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); font-weight: 700; text-align: center; }
+  h1 { font-family: Vibes, cursive; font-weight: 400; font-size: 56px; margin: 4px 0 10px; text-align: center; }
+  .bar { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 18px; font-size: 15px; color: #555; font-style: italic; }
+  button, input { font: inherit; }
+  .btn { font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; padding: 9px 14px; border-radius: 9px; border: 0; background: var(--navy); color: #fff; cursor: pointer; font-style: normal; }
+  .btn.gold { background: var(--gold); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: 54px 1fr auto; gap: 14px; align-items: center; }
+  .place { font-family: Vibes, cursive; font-size: 46px; color: var(--gold); text-align: center; line-height: 1; }
+  .team { font-weight: 700; font-size: 22px; }
+  .names { font-style: italic; color: #3A4763; font-size: 17px; }
+  .total { text-align: right; }
+  .total b { font-size: 40px; display: block; line-height: 1; }
+  .total span { font-size: 13px; color: #777; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: 14px; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--line); background: var(--paper); }
+  .chip.done { background: #EEF1F7; border-color: #C9D2E4; }
+  .chip.mem.ok { background: #E6F0EA; border-color: var(--ok); color: var(--ok); }
+  .chip.mem.no { background: #F7ECEC; border-color: var(--bad); color: var(--bad); }
+  .status { font-size: 14px; color: #777; margin-top: 6px; }
+  .gate { max-width: 360px; margin: 40px auto; text-align: center; }
+  .gate input { width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px; margin: 10px 0; font-size: 18px; }
+  .err { color: var(--bad); font-size: 15px; }
+  details { margin-top: 8px; font-size: 15px; }
+  details li { margin: 2px 0; }
+  .r { color: var(--ok); } .w { color: var(--bad); }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const ENDPOINT = 'https://winterhouse-survey.ryanapanela.workers.dev';
+const ROUNDS = [['timeline', 'Timeline'], ['rendezvous', 'Rendezvous'], ['who', 'Who’s in It?'], ['zoom', 'Zoom In'], ['hear', 'Hear It'], ['caption', 'Caption']];
+const params = new URLSearchParams(location.search);
+const pilot = params.has('pilot');
+let key = params.get('k') || (() => { try { return localStorage.getItem('wh-yb-gm') || ''; } catch (e) { return ''; } })();
+let reveal = false, data = null, err = '', last = null;
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function items(t, k) { return k === 'hear' ? YB.hear : YB.teams[t][k]; }
+function correct(t, k, i, v) {
+  const it = items(t, k)[i];
+  if (k === 'who') {
+    const truth = it.names, picked = new Set((v || []).filter(Boolean));
+    const hits = truth.filter(n => picked.has(n)).length;
+    return hits >= truth.length - (truth.length >= 3 ? 1 : 0);
+  }
+  return v === it.a;
+}
+function grade(t, d) {
+  const out = { rounds: [], total: 0, max: 0, done: 0 };
+  for (const [k, label] of ROUNDS) {
+    const n = items(t, k).length, locked = !!(d.locked || {})[k], a = (d.ans || {})[k] || {};
+    let s = 0; const detail = [];
+    for (let i = 0; i < n; i++) { const ok = a[i] !== undefined && correct(t, k, i, a[i]); if (ok) s++; detail.push(ok); }
+    out.rounds.push({ k, label, n, s, locked, detail });
+    out.max += n; if (locked) { out.total += s; out.done++; }
+  }
+  const flagged = ((d.ans || {}).memory || {})[0];
+  out.memLocked = !!(d.locked || {}).memory;
+  out.flagged = flagged;
+  out.memOk = flagged === YB.teams[t].fake;
+  return out;
+}
+
+function gate(msg) {
+  app.innerHTML = `<div class="kicker">Winterhouse · Season II</div><h1>Scoreboard</h1>
+    <div class="gate card"><div>Enter the GM key</div><input id="k" autocomplete="off" value="${esc(key)}"><button class="btn" id="go">Open</button>
+    ${msg ? `<p class="err">${esc(msg)}</p>` : ''}</div>`;
+  const go = () => { key = document.getElementById('k').value.trim(); try { localStorage.setItem('wh-yb-gm', key); } catch (e) {} fetchData(); };
+  document.getElementById('go').onclick = go;
+  document.getElementById('k').onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+async function fetchData() {
+  if (!key) return gate('');
+  try {
+    const r = await fetch(ENDPOINT + '/yb/results', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k: key, pilot }) });
+    const j = await r.json();
+    if (r.status === 403) return gate('That key didn’t work.');
+    if (!r.ok) throw new Error(j.error || r.status);
+    try { localStorage.setItem('wh-yb-gm', key); } catch (e) {}
+    data = j.teams; err = ''; last = new Date();
+  } catch (e) { err = 'Couldn’t refresh: ' + (e.message || e); }
+  draw();
+}
+
+function draw() {
+  if (!data) return;
+  const rows = ['1', '2', '3', '4', '5'].map(t => ({ t, d: data[t], g: data[t] ? grade(t, data[t]) : null }));
+  rows.sort((a, b) => ((b.g ? b.g.total + (reveal && b.g.memOk ? 1 : 0) : -1) - (a.g ? a.g.total + (reveal && a.g.memOk ? 1 : 0) : -1)) || (+a.t - +b.t));
+  const anyDone = rows.some(r => r.d && r.d.final);
+  app.innerHTML = `<div class="kicker">Winterhouse · Season II · Mission 3${pilot ? ' · PILOT' : ''}</div><h1>The Yearbook Scoreboard</h1>
+    <div class="bar"><span>${last ? 'Updated ' + last.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · refreshes every 15 s' : ''}</span>
+      <button class="btn" id="ref">Refresh</button>
+      <button class="btn gold" id="rev">${reveal ? 'Hide the fake' : 'Reveal the fake memory'}</button></div>
+    ${err ? `<p class="err" style="text-align:center">${esc(err)}</p>` : ''}
+    ${reveal ? `<div class="card"><div class="kicker" style="text-align:left">The fake memory</div><div style="font-style:italic;margin-top:6px">${esc(YB.fakeMemory)}</div></div>` : ''}
+    ${rows.map((r, i) => {
+      if (!r.d) return `<div class="card row"><div class="place">–</div><div><div class="team">Team ${r.t}</div><div class="status">Not started</div></div><div></div></div>`;
+      const g = r.g, names = String(r.d.names || '').split('|').filter(Boolean).join(' · ');
+      const when = r.d.receivedAt ? new Date(r.d.receivedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+      const status = r.d.final ? `Finished ${when}` : `In progress · ${g.done} of ${ROUNDS.length} rounds locked · last update ${when}`;
+      const mem = g.memLocked
+        ? (reveal ? `<span class="chip mem ${g.memOk ? 'ok' : 'no'}">Memory: flagged #${g.flagged + 1} ${g.memOk ? '✓ +1' : '✗'}</span>` : `<span class="chip done">Memory: flagged #${g.flagged + 1}</span>`)
+        : `<span class="chip">Memory …</span>`;
+      const total = g.total + (reveal && g.memOk ? 1 : 0);
+      const det = g.rounds.filter(x => x.locked).map(x => `<li><b>${x.label}:</b> ${x.detail.map((ok, j) => `<span class="${ok ? 'r' : 'w'}">${j + 1}${ok ? '✓' : '✗'}</span>`).join(' ')}</li>`).join('');
+      return `<div class="card"><div class="row"><div class="place">${i + 1}</div>
+        <div><div class="team">Team ${r.t}</div><div class="names">${esc(names)}</div>
+          <div class="chips">${g.rounds.map(x => `<span class="chip ${x.locked ? 'done' : ''}">${x.label} ${x.locked ? x.s + '/' + x.n : '…'}</span>`).join('')}${mem}</div>
+          <div class="status">${status}</div></div>
+        <div class="total"><b>${total}</b><span>of ${g.max + 1}</span></div></div>
+        ${det ? `<details><summary>Question by question</summary><ul>${det}</ul></details>` : ''}</div>`;
+    }).join('')}`;
+  document.getElementById('ref').onclick = fetchData;
+  document.getElementById('rev').onclick = () => { reveal = !reveal; draw(); };
+}
+
+fetchData();
+setInterval(() => { if (key && !document.querySelector('details[open]')) fetchData(); }, 15000);
+</script>
+</body>
+</html>

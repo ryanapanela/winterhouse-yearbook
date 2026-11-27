@@ -38,6 +38,19 @@
   .opt.right { border-color: var(--ok); }
   .locked .opt.sel.right { background: var(--ok); border-color: var(--ok); }
   .locked .opt.sel.wrong { background: var(--bad); border-color: var(--bad); }
+  .tl { display: grid; gap: 10px; }
+  .tlrow { display: flex; align-items: center; gap: 10px; padding: 8px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+  .tlrow.drag { position: relative; z-index: 5; box-shadow: 0 10px 28px rgba(30,55,101,.25); border-color: var(--gold); }
+  .tlrow .rank { width: 54px; text-align: center; font-weight: 700; font-size: 30px; line-height: 1; color: var(--gold); flex: none; }
+  .tlrow .rank small { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #777; margin-top: 4px; }
+  .tlrow img { flex: 1; min-width: 0; height: 140px; object-fit: contain; background: #EFEAE0 !important; touch-action: none; cursor: grab; -webkit-user-drag: none; }
+  .tlrow .ctl { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: none; }
+  .tlrow .mv { font: inherit; font-size: 15px; width: 38px; height: 34px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--paper); color: var(--navy); }
+  .tlrow .mv:disabled { opacity: .3; }
+  .tlrow .grip { font-size: 22px; color: #999; touch-action: none; cursor: grab; padding: 0 6px; }
+  .tlrow.ok { border-color: var(--ok); background: #E6F0EA; }
+  .tlrow.no { border-color: var(--bad); background: #F7ECEC; }
+  .tlrow .yr { font-weight: 700; font-size: 18px; }
   audio { width: 100%; margin-top: 4px; }
   .memory { font-size: 19px; font-style: italic; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper); cursor: pointer; margin-bottom: 9px; text-align: left; width: 100%; color: var(--navy); font-family: inherit; line-height: 1.35; }
   .memory.sel { border-color: var(--bad); background: #F7ECEC; }
@@ -68,7 +81,7 @@
 <div class="bar" id="bar" hidden><div class="in"><span class="note" id="note"></span><button class="btn" id="go"></button></div></div>
 <script>
 const STEPS = [
-  { key: 'timeline', title: 'Class Timeline', lede: 'Put these in order: 1 for the earliest, 4 for the most recent.' },
+  { key: 'timeline', title: 'Class Timeline', lede: 'Drag the photos into order: earliest at the top, most recent at the bottom.' },
   { key: 'rendezvous', title: 'Which Rendezvous?', lede: 'Name the night this photo is from.' },
   { key: 'who', title: 'Who’s in It?', lede: 'It’s pixelated. Name everyone in the photo. One wrong name still counts.' },
   { key: 'zoom', title: 'Zoom In', lede: 'Look closely.' },
@@ -87,6 +100,14 @@ const KEY = () => 'wh-yearbook-team-' + S.team;
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY()) || 'null'); if (s) S = s; } catch (e) {} }
 function save() { try { localStorage.setItem(KEY(), JSON.stringify(S)); } catch (e) {} }
 if (S.team) load();
+if (params.has('pilot') && S.team) { S.pilot = true; save(); }
+const ENDPOINT = 'https://winterhouse-survey.ryanapanela.workers.dev';
+function sync(final) {
+  if (!S.team) return Promise.resolve(false);
+  return fetch(ENDPOINT + '/yb/save', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ team: S.team, pilot: !!S.pilot, names: S.names, ans: S.ans, locked: S.locked, step: S.step, final: !!final, sentAt: new Date().toISOString() }) })
+    .then(r => r.ok).catch(() => false);
+}
 
 const app = document.getElementById('app'), bar = document.getElementById('bar'), note = document.getElementById('note'), go = document.getElementById('go');
 const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
@@ -133,7 +154,7 @@ function renderStart() {
   go.textContent = S.step >= 0 ? 'Continue' : 'Start';
   go.className = 'btn gold';
   go.disabled = !S.team;
-  go.onclick = () => { if (S.step < 0) S.step = 0; save(); render(); };
+  go.onclick = () => { if (S.step < 0) S.step = 0; if (params.has('pilot')) S.pilot = true; save(); sync(false); render(); };
 }
 
 function option(key, i, v, label, cls) {
@@ -145,16 +166,57 @@ function option(key, i, v, label, cls) {
   return b;
 }
 
+function renderTimeline(wrap, locked) {
+  const items = R('timeline');
+  if (!Array.isArray(S.tl) || S.tl.length !== items.length) S.tl = items.map((_, i) => i);
+  const setAns = () => { S.ans.timeline = {}; S.tl.forEach((p, pos) => { S.ans.timeline[p] = String(pos + 1); }); save(); };
+  if (!locked && !S.ans.timeline) setAns();
+  const labels = ['Earliest', '', '', 'Most recent'];
+  const list = el('<div class="tl"></div>');
+  S.tl.forEach((p, pos) => {
+    const it = items[p], cls = locked ? (correct('timeline', p, String(pos + 1)) ? 'ok' : 'no') : '';
+    const ctl = locked ? `<span class="yr">${esc(it.year || '')}</span>`
+      : `<button class="mv" data-d="-1" ${pos === 0 ? 'disabled' : ''} aria-label="Move up">▲</button><span class="grip">≡</span><button class="mv" data-d="1" ${pos === S.tl.length - 1 ? 'disabled' : ''} aria-label="Move down">▼</button>`;
+    list.appendChild(el(`<div class="card tlrow ${cls}" data-p="${p}"><div class="rank">${pos + 1}<small>${labels[pos] || '&nbsp;'}</small></div><img src="${it.img}" alt="" draggable="false">
+      <div class="ctl">${ctl}</div></div>`));
+  });
+  wrap.appendChild(list);
+  if (locked) return;
+  const commit = () => { S.tl = [...list.children].map(r => +r.dataset.p); setAns(); render(); };
+  list.addEventListener('click', e => {
+    const b = e.target.closest('.mv'); if (!b) return;
+    const pos = [...list.children].indexOf(b.closest('.tlrow')), to = pos + (+b.dataset.d);
+    if (to < 0 || to >= S.tl.length) return;
+    [S.tl[pos], S.tl[to]] = [S.tl[to], S.tl[pos]]; setAns(); render();
+  });
+  let drag = null;
+  list.addEventListener('pointerdown', e => {
+    const h = e.target.closest('img, .grip'); if (!h) return;
+    const row = h.closest('.tlrow'); e.preventDefault();
+    try { row.setPointerCapture(e.pointerId); } catch (_) {}
+    drag = { row, y0: e.clientY }; row.classList.add('drag');
+  });
+  list.addEventListener('pointermove', e => {
+    if (!drag) return; e.preventDefault();
+    const row = drag.row; let dy = e.clientY - drag.y0;
+    const mid = row.offsetTop + row.offsetHeight / 2 + dy;
+    const next = row.nextElementSibling, prev = row.previousElementSibling;
+    const before = row.offsetTop;
+    if (next && mid > next.offsetTop + next.offsetHeight / 2) list.insertBefore(next, row);
+    else if (prev && mid < prev.offsetTop + prev.offsetHeight / 2) list.insertBefore(prev, row.nextSibling);
+    drag.y0 += row.offsetTop - before; dy = e.clientY - drag.y0;
+    row.style.transform = `translateY(${dy}px)`;
+  });
+  const end = () => { if (!drag) return; drag.row.style.transform = ''; drag.row.classList.remove('drag'); drag = null; commit(); };
+  list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
+}
+
 function renderStep() {
   const st = STEPS[S.step], key = st.key, locked = !!S.locked[key];
   app.innerHTML = header() + progress(S.step) + `<h2>${st.title}</h2><p class="lede">${st.lede}</p>`;
   const wrap = el(`<div class="${locked ? 'locked' : ''}"></div>`);
   if (key === 'timeline') {
-    R('timeline').forEach((it, i) => {
-      const c = el(`<div class="card"><div class="num">PHOTO ${i + 1}</div><img src="${it.img}" alt="" loading="lazy"><div class="opts years"></div></div>`);
-      ['1', '2', '3', '4'].forEach(y => c.querySelector('.opts').appendChild(option(key, i, y, ['1st', '2nd', '3rd', '4th'][+y - 1])));
-      wrap.appendChild(c);
-    });
+    renderTimeline(wrap, locked);
   } else if (key === 'who') {
     R('who').forEach((it, i) => {
       const cur = ((S.ans.who || {})[i]) || [];
@@ -208,7 +270,7 @@ function renderStep() {
     go.textContent = 'Lock in'; go.className = 'btn'; go.disabled = done < need;
     go.onclick = () => {
       if (!confirm('Lock in this round? You can’t change your answers after this.')) return;
-      S.locked[key] = true; save();
+      S.locked[key] = true; save(); sync(key === 'memory');
       if (key === 'memory') { S.step++; save(); render(); scrollTo(0, 0); } else { render(); scrollTo(0, 0); }
     };
   }
@@ -230,7 +292,9 @@ function renderEnd() {
       <tr><td>Whose Memory?</td><td>Memory ${flagged + 1}</td></tr></table>
       <div class="flag no" style="background:#EEF1F7;color:var(--navy)">You flagged <b>memory ${flagged + 1}</b> as the fake. Ryan reveals the truth once every team is done, and it’s worth one more quarter if you’re right.</div>
     </div>
-    <p class="small">Team ${esc(S.team)} · finished ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>`;
+    <p class="small">Team ${esc(S.team)} · finished ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
+    <p class="small" id="sent">Sending your answers to Ryan…</p>`;
+  sync(true).then(ok => { const e = document.getElementById('sent'); if (e) e.textContent = ok ? 'Sent to Ryan ✓' : 'Couldn’t reach Ryan’s scoreboard. Show him this screen.'; });
 }
 
 function render() {
