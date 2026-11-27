@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Yearbook · Winterhouse Season II</title>
+<script src="content.js"></script>
+<style>
+  @font-face { font-family: Cormorant; src: url(fonts/Cormorant.ttf); font-weight: 300 700; }
+  @font-face { font-family: Cormorant; src: url(fonts/Cormorant-Italic.ttf); font-style: italic; font-weight: 300 700; }
+  @font-face { font-family: Vibes; src: url(fonts/GreatVibes-Regular.ttf); }
+  :root { --navy: #1E3765; --gold: #B08D3C; --paper: #FBF8F1; --line: #E3DCCB; --ok: #2E6B4F; --bad: #8C2F39; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--paper); color: var(--navy); }
+  body { font: 19px/1.35 Cormorant, Georgia, serif; font-weight: 500; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  main { max-width: 560px; margin: 0 auto; padding: 18px 18px 120px; }
+  .kicker { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); font-weight: 700; text-align: center; }
+  h1 { font-family: Vibes, cursive; font-weight: 400; font-size: 52px; line-height: 1.05; margin: 6px 0 2px; text-align: center; }
+  h2 { font-weight: 600; font-size: 25px; letter-spacing: .12em; text-transform: uppercase; margin: 4px 0 6px; text-align: center; }
+  .lede { text-align: center; font-style: italic; color: #3A4763; margin: 0 0 18px; }
+  .rule { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 10px 0 16px; }
+  .rule i { width: 70px; height: 1px; background: var(--navy); display: block; }
+  .rule b { width: 7px; height: 7px; background: var(--gold); transform: rotate(45deg); display: block; }
+  .progress { display: flex; gap: 5px; margin: 0 0 14px; }
+  .progress span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+  .progress span.on { background: var(--gold); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 0 0 16px; box-shadow: 0 1px 0 rgba(0,0,0,.03); }
+  .card .num { font-size: 13px; letter-spacing: .2em; color: var(--gold); font-weight: 700; margin-bottom: 6px; }
+  .card img, .card video { width: 100%; display: block; border-radius: 9px; background: #222; }
+  .card img.zoom { max-height: 360px; object-fit: contain; }
+  .q { font-size: 20px; font-weight: 600; margin: 10px 2px 8px; }
+  .opts { display: grid; gap: 7px; margin-top: 10px; }
+  .opts.years { grid-template-columns: repeat(4, 1fr); }
+  .opt { font: inherit; font-size: 18px; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper); color: var(--navy); cursor: pointer; }
+  .years .opt { text-align: center; font-weight: 600; padding: 10px 0; }
+  .opt.sel { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .opt:disabled { cursor: default; }
+  .opt.right { border-color: var(--ok); }
+  .locked .opt.sel.right { background: var(--ok); border-color: var(--ok); }
+  .locked .opt.sel.wrong { background: var(--bad); border-color: var(--bad); }
+  audio { width: 100%; margin-top: 4px; }
+  .memory { font-size: 19px; font-style: italic; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper); cursor: pointer; margin-bottom: 9px; text-align: left; width: 100%; color: var(--navy); font-family: inherit; line-height: 1.35; }
+  .memory.sel { border-color: var(--bad); background: #F7ECEC; }
+  .memory .tag { display: block; font-style: normal; font-size: 12px; letter-spacing: .2em; color: var(--bad); font-weight: 700; margin-bottom: 3px; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(251,248,241,.96); border-top: 1px solid var(--line); padding: 10px 18px calc(10px + env(safe-area-inset-bottom)); }
+  .bar .in { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+  .bar .note { flex: 1; font-size: 15px; font-style: italic; color: #555; }
+  .btn { font: inherit; font-weight: 700; font-size: 17px; letter-spacing: .08em; text-transform: uppercase; padding: 12px 18px; border-radius: 10px; border: 0; background: var(--navy); color: #fff; cursor: pointer; }
+  .btn.gold { background: var(--gold); }
+  .btn:disabled { opacity: .35; }
+  .teams { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 14px 0; }
+  .teams .opt { text-align: center; font-weight: 700; font-size: 22px; }
+  input.names { width: 100%; font: inherit; font-size: 18px; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; color: var(--navy); }
+  .score { text-align: center; }
+  .score .big { font-family: Vibes, cursive; font-size: 88px; line-height: 1; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 19px; }
+  td { padding: 8px 4px; border-bottom: 1px solid var(--line); }
+  td:last-child { text-align: right; font-weight: 700; }
+  .flag { margin-top: 14px; padding: 14px; border-radius: 12px; text-align: center; font-weight: 600; }
+  .flag.ok { background: #E6F0EA; color: var(--ok); }
+  .flag.no { background: #F7ECEC; color: var(--bad); }
+  .small { font-size: 14px; color: #777; text-align: center; margin-top: 18px; }
+  .reveal { margin-top: 10px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="bar" id="bar" hidden><div class="in"><span class="note" id="note"></span><button class="btn" id="go"></button></div></div>
+<script>
+const STEPS = [
+  { key: 'timeline', title: 'Class Timeline', lede: 'Put these in order: 1 for the earliest, 4 for the most recent.' },
+  { key: 'rendezvous', title: 'Which Rendezvous?', lede: 'Name the night this photo is from.' },
+  { key: 'who', title: 'Who’s in It?', lede: 'It’s pixelated. Name everyone in the photo. One wrong name still counts.' },
+  { key: 'zoom', title: 'Zoom In', lede: 'Look closely.' },
+  { key: 'hear', title: 'Hear It', lede: 'Listen closely. Ryan shows the videos at the end.' },
+  { key: 'caption', title: 'Guess the Caption', lede: 'Only one of these is the real caption.' },
+  { key: 'memory', title: 'Whose Memory?', lede: 'Six of these really happened. One was planted by the Traitors. Flag the fake.' }
+];
+const params = new URLSearchParams(location.search);
+if (params.has('reset')) {
+  try { Object.keys(localStorage).filter(k => k.startsWith('wh-yearbook-team-')).forEach(k => localStorage.removeItem(k)); } catch (e) {}
+  params.delete('reset');
+  location.replace(location.pathname + (params.toString() ? '?' + params : ''));
+}
+let S = { team: params.get('team') || '', names: '', step: -1, ans: {}, locked: {} };
+const KEY = () => 'wh-yearbook-team-' + S.team;
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY()) || 'null'); if (s) S = s; } catch (e) {} }
+function save() { try { localStorage.setItem(KEY(), JSON.stringify(S)); } catch (e) {} }
+if (S.team) load();
+
+const app = document.getElementById('app'), bar = document.getElementById('bar'), note = document.getElementById('note'), go = document.getElementById('go');
+const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function header(sub) {
+  return `<div class="kicker">Winterhouse · Season II${S.team ? ' · Team ' + esc(S.team) : ''}</div><h1>The Yearbook</h1>${sub || ''}<div class="rule"><i></i><b></b><i></i></div>`;
+}
+function progress(i) { return `<div class="progress">${STEPS.map((_, j) => `<span class="${j <= i ? 'on' : ''}"></span>`).join('')}</div>`; }
+
+function R(key) { return (key === 'hear') ? YB.hear : (YB.teams[S.team] || YB.teams['1'])[key]; }
+function count(key) { return key === 'memory' ? 1 : R(key).length; }
+function correct(key, i, v) {
+  if (key === 'timeline') return v === R('timeline')[i].a;
+  if (key === 'memory') return v === (YB.teams[S.team] || YB.teams['1']).fake;
+  if (key === 'who') {
+    const truth = R('who')[i].names, picked = new Set((v || []).filter(Boolean));
+    const hits = truth.filter(n => picked.has(n)).length;
+    return hits >= truth.length - (truth.length >= 3 ? 1 : 0);
+  }
+  return v === R(key)[i].a;
+}
+function sectionScore(key) {
+  const a = S.ans[key] || {}; let n = 0;
+  for (let i = 0; i < count(key); i++) if (a[i] !== undefined && correct(key, i, a[i])) n++;
+  return n;
+}
+
+function renderStart() {
+  bar.hidden = false;
+  app.innerHTML = header(`<p class="lede">Five years. One yearbook. Let’s see what you remember.</p>`);
+  const c = el(`<div class="card"><div class="q">Which team are you?</div><div class="teams"></div>
+    <div class="q" style="margin-top:14px">Who’s on your team?</div>${[0, 1, 2].map(k => `<input class="names" style="margin-bottom:8px" placeholder="Teammate ${k + 1}" value="${esc((S.names || '').split('|')[k] || '')}">`).join('')}</div>`);
+  const t = c.querySelector('.teams');
+  ['1', '2', '3', '4', '5'].forEach(n => {
+    const b = el(`<button class="opt ${S.team === n ? 'sel' : ''}">${n}</button>`);
+    b.onclick = () => { const names = [...c.querySelectorAll('input')].map(x => x.value).join('|'); S.team = n; load(); if (S.step < 0) S.names = names; save(); renderStart(); };
+    t.appendChild(b);
+  });
+  c.querySelectorAll('input').forEach(x => x.oninput = () => { S.names = [...c.querySelectorAll('input')].map(y => y.value).join('|'); if (S.team) save(); });
+  app.appendChild(c);
+  app.appendChild(el(`<div class="card"><div class="q">How it works</div><p style="margin:4px 2px">Seven rounds. Every right answer puts a quarter in the prize pot. Lock in each round when you’re sure, because you can’t go back.</p><p style="margin:4px 2px">The last round hides one fake memory planted by the Traitors. If at least three teams catch it, the best team earns the group a <b>Seer</b>.</p></div>`));
+  note.textContent = S.team ? '' : 'Pick your team number';
+  go.textContent = S.step >= 0 ? 'Continue' : 'Start';
+  go.className = 'btn gold';
+  go.disabled = !S.team;
+  go.onclick = () => { if (S.step < 0) S.step = 0; save(); render(); };
+}
+
+function option(key, i, v, label, cls) {
+  const a = (S.ans[key] || {})[i], locked = S.locked[key];
+  let k = 'opt ' + (cls || '');
+  if (a === v) k += ' sel';
+  const b = el(`<button class="${k}" ${locked ? 'disabled' : ''}>${esc(label)}</button>`);
+  b.onclick = () => { S.ans[key] = S.ans[key] || {}; S.ans[key][i] = v; save(); render(); };
+  return b;
+}
+
+function renderStep() {
+  const st = STEPS[S.step], key = st.key, locked = !!S.locked[key];
+  app.innerHTML = header() + progress(S.step) + `<h2>${st.title}</h2><p class="lede">${st.lede}</p>`;
+  const wrap = el(`<div class="${locked ? 'locked' : ''}"></div>`);
+  if (key === 'timeline') {
+    R('timeline').forEach((it, i) => {
+      const c = el(`<div class="card"><div class="num">PHOTO ${i + 1}</div><img src="${it.img}" alt="" loading="lazy"><div class="opts years"></div></div>`);
+      ['1', '2', '3', '4'].forEach(y => c.querySelector('.opts').appendChild(option(key, i, y, ['1st', '2nd', '3rd', '4th'][+y - 1])));
+      wrap.appendChild(c);
+    });
+  } else if (key === 'who') {
+    R('who').forEach((it, i) => {
+      const cur = ((S.ans.who || {})[i]) || [];
+      const c = el(`<div class="card"><div class="num">PHOTO ${i + 1} · ${it.names.length} ${it.names.length === 1 ? 'PERSON' : 'PEOPLE'}</div><img src="${it.img}" alt="" loading="lazy">${it.q ? `<div class="q">${esc(it.q)}</div>` : ''}<div class="opts"></div></div>`);
+      it.names.forEach((_, k) => {
+        const sel = el(`<select class="opt" ${locked ? 'disabled' : ''}><option value="">Person ${k + 1}…</option>${YB.people.map(p => `<option ${cur[k] === p ? 'selected' : ''}>${p}</option>`).join('')}</select>`);
+        sel.onchange = () => {
+          const arr = (((S.ans.who || {})[i]) || []).slice(); arr[k] = sel.value;
+          S.ans.who = S.ans.who || {}; S.ans.who[i] = arr; save(); render();
+        };
+        c.querySelector('.opts').appendChild(sel);
+      });
+      wrap.appendChild(c);
+    });
+  } else if (key === 'zoom' || key === 'caption' || key === 'rendezvous') {
+    R(key).forEach((it, i) => {
+      const c = el(`<div class="card"><div class="num">${key === 'zoom' ? 'CLOSE-UP' : 'PHOTO'} ${i + 1}</div><img class="${key === 'zoom' ? 'zoom' : ''}" src="${it.img}" alt="" loading="lazy">${it.q ? `<div class="q">${esc(it.q)}</div>` : ''}<div class="opts"></div></div>`);
+      it.o.forEach((o, j) => c.querySelector('.opts').appendChild(option(key, i, j, o)));
+      wrap.appendChild(c);
+    });
+  } else if (key === 'hear') {
+    R('hear').forEach((it, i) => {
+      const media = it.kind === 'video'
+        ? `<video src="${it.src}" controls playsinline preload="metadata"></video>`
+        : `<audio src="${it.src}" controls preload="metadata"></audio>`;
+      const rev = '';
+      const c = el(`<div class="card"><div class="num">CLIP ${i + 1}</div>${media}<div class="q">${esc(it.q)}</div><div class="opts"></div>${rev}</div>`);
+      it.o.forEach((o, j) => c.querySelector('.opts').appendChild(option(key, i, j, o)));
+      wrap.appendChild(c);
+    });
+  } else if (key === 'memory') {
+    const a = (S.ans.memory || {})[0];
+    (YB.teams[S.team] || YB.teams['1']).memories.forEach((m, j) => {
+      let cls = 'memory' + (a === j ? ' sel' : '');
+      const b = el(`<button class="${cls}" ${locked ? 'disabled' : ''}>${a === j ? '<span class="tag">FLAGGED AS FAKE</span>' : ''}${esc(m)}</button>`);
+      b.onclick = () => { S.ans.memory = { 0: j }; save(); render(); };
+      wrap.appendChild(b);
+    });
+  }
+  app.appendChild(wrap);
+  const done = key === 'who'
+    ? Object.entries(S.ans.who || {}).filter(([i, v]) => R('who')[i] && v.filter(Boolean).length === R('who')[i].names.length).length
+    : Object.keys(S.ans[key] || {}).length, need = count(key);
+  if (locked) {
+    note.textContent = 'Locked in';
+    go.textContent = S.step < STEPS.length - 1 ? 'Next round' : 'See results';
+    go.className = 'btn gold'; go.disabled = false;
+    go.onclick = () => { S.step++; save(); render(); scrollTo(0, 0); };
+  } else {
+    note.textContent = `${done} of ${need} answered`;
+    go.textContent = 'Lock in'; go.className = 'btn'; go.disabled = done < need;
+    go.onclick = () => {
+      if (!confirm('Lock in this round? You can’t change your answers after this.')) return;
+      S.locked[key] = true; save();
+      if (key === 'memory') { S.step++; save(); render(); scrollTo(0, 0); } else { render(); scrollTo(0, 0); }
+    };
+  }
+}
+
+function renderEnd() {
+  bar.hidden = true;
+  const rows = STEPS.filter(s => s.key !== 'memory').map(s => [s.title, sectionScore(s.key), count(s.key)]);
+  const flagged = (S.ans.memory || {})[0];
+  const total = rows.reduce((a, r) => a + r[1], 0);
+  const max = rows.reduce((a, r) => a + r[2], 0);
+  app.innerHTML = header(`<p class="lede">${esc((S.names || '').split('|').filter(Boolean).join(' · '))}</p>`) + `
+    <div class="card score">
+      <div class="kicker">Show this screen to Ryan</div>
+      <div class="big">${total}</div>
+      <div>out of ${max} so far</div>
+    </div>
+    <div class="card"><table>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]} / ${r[2]}</td></tr>`).join('')}
+      <tr><td>Whose Memory?</td><td>Memory ${flagged + 1}</td></tr></table>
+      <div class="flag no" style="background:#EEF1F7;color:var(--navy)">You flagged <b>memory ${flagged + 1}</b> as the fake. Ryan reveals the truth once every team is done, and it’s worth one more quarter if you’re right.</div>
+    </div>
+    <p class="small">Team ${esc(S.team)} · finished ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>`;
+}
+
+function render() {
+  if (S.step < 0 || !S.team) return renderStart();
+  bar.hidden = false;
+  if (S.step >= STEPS.length) return renderEnd();
+  renderStep();
+}
+render();
+</script>
+</body>
+</html>
