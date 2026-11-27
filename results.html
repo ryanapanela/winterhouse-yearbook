@@ -7,38 +7,49 @@
 <title>Yearbook Scoreboard · Winterhouse Season II</title>
 <script src="content.js"></script>
 <style>
-  @font-face { font-family: Cormorant; src: url(fonts/Cormorant.ttf); font-weight: 300 700; }
-  @font-face { font-family: Vibes; src: url(fonts/GreatVibes-Regular.ttf); }
-  :root { --navy: #1E3765; --gold: #B08D3C; --paper: #FBF8F1; --line: #E3DCCB; --ok: #2E6B4F; --bad: #8C2F39; }
+  @font-face { font-family: Vibes; src: url(fonts/GreatVibes-Regular.ttf); font-display: swap; }
+  @font-face { font-family: Bebas; src: url(fonts/BebasNeue.woff2) format('woff2'); }
+  @font-face { font-family: Lato; src: url(fonts/Lato-400.woff2) format('woff2'); font-weight: 400; }
+  @font-face { font-family: Lato; src: url(fonts/Lato-400i.woff2) format('woff2'); font-weight: 400; font-style: italic; }
+  @font-face { font-family: Lato; src: url(fonts/Lato-700.woff2) format('woff2'); font-weight: 700; }
+  @font-face { font-family: Lato; src: url(fonts/Lato-900.woff2) format('woff2'); font-weight: 900; }
+  :root { --navy: #01295B; --ink: #172A4D; --blue: #3D97DB; --sky: #86BAF0; --pale: #E3EEFA; --slate: #5E7FA3; --paper: #F7F5F0; --line: #DCE3EC; --ok: #1F8A70; --bad: #E0574B; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--paper); color: var(--navy); font: 19px/1.35 Cormorant, Georgia, serif; font-weight: 500; }
-  main { max-width: 980px; margin: 0 auto; padding: 22px 18px 60px; }
-  .kicker { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: var(--gold); font-weight: 700; text-align: center; }
-  h1 { font-family: Vibes, cursive; font-weight: 400; font-size: 56px; margin: 4px 0 10px; text-align: center; }
-  .bar { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin-bottom: 18px; font-size: 15px; color: #555; font-style: italic; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.4 Lato, Helvetica, Arial, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px 22px 60px; }
+  .hd { display: flex; align-items: flex-end; gap: 22px; margin-bottom: 8px; }
+  .hd img { width: 120px; }
+  .kicker { font-size: 14px; font-weight: 900; color: var(--navy); }
+  .kicker span { font-weight: 400; color: var(--slate); }
+  h1 { font-family: Vibes, cursive; font-weight: 400; font-size: 66px; line-height: 1.1; color: var(--navy); margin: 0; }
+  .sect { display: flex; align-items: center; gap: 12px; margin: 14px 0 16px; }
+  .sect i { flex: 1; height: 8px; background: var(--blue); }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--slate); }
   button, input { font: inherit; }
-  .btn { font-weight: 700; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; padding: 9px 14px; border-radius: 9px; border: 0; background: var(--navy); color: #fff; cursor: pointer; font-style: normal; }
-  .btn.gold { background: var(--gold); }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
-  .row { display: grid; grid-template-columns: 54px 1fr auto; gap: 14px; align-items: center; }
-  .place { font-family: Vibes, cursive; font-size: 46px; color: var(--gold); text-align: center; line-height: 1; }
-  .team { font-weight: 700; font-size: 22px; }
-  .names { font-style: italic; color: #3A4763; font-size: 17px; }
+  .btn { font-family: Bebas, Impact, sans-serif; font-size: 20px; letter-spacing: .04em; padding: 8px 16px 6px; border-radius: 8px; border: 0; background: var(--navy); color: #fff; cursor: pointer; }
+  .btn.gold { background: var(--blue); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(1,41,91,.05); }
+  .row { display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; align-items: center; }
+  .place { font-family: Bebas, Impact, sans-serif; font-size: 60px; color: var(--blue); text-align: center; line-height: .9; }
+  .team { font-family: Bebas, Impact, sans-serif; font-size: 30px; color: var(--navy); line-height: 1; }
+  .names { color: var(--slate); font-size: 15px; margin-top: 2px; }
   .total { text-align: right; }
-  .total b { font-size: 40px; display: block; line-height: 1; }
-  .total span { font-size: 13px; color: #777; }
+  .total b { font-family: Bebas, Impact, sans-serif; font-weight: 400; font-size: 64px; display: block; line-height: .9; color: var(--navy); }
+  .total span { font-size: 12px; color: var(--slate); font-weight: 700; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .chip { font-size: 14px; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--line); background: var(--paper); }
-  .chip.done { background: #EEF1F7; border-color: #C9D2E4; }
-  .chip.mem.ok { background: #E6F0EA; border-color: var(--ok); color: var(--ok); }
-  .chip.mem.no { background: #F7ECEC; border-color: var(--bad); color: var(--bad); }
-  .status { font-size: 14px; color: #777; margin-top: 6px; }
-  .gate { max-width: 360px; margin: 40px auto; text-align: center; }
-  .gate input { width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px; margin: 10px 0; font-size: 18px; }
-  .err { color: var(--bad); font-size: 15px; }
-  details { margin-top: 8px; font-size: 15px; }
+  .chip { font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: #F0F2F5; color: #8A97A8; }
+  .chip.done { background: var(--pale); color: var(--navy); }
+  .chip.mem.ok { background: #E2F3EE; color: var(--ok); }
+  .chip.mem.no { background: #FBE9E7; color: var(--bad); }
+  .status { font-size: 13px; color: var(--slate); margin-top: 6px; }
+  .gate { max-width: 360px; margin: 30px 0; }
+  .gate input { width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 8px; margin: 10px 0; font-size: 17px; }
+  .err { color: var(--bad); font-size: 14px; }
+  details { margin-top: 8px; font-size: 14px; }
   details li { margin: 2px 0; }
-  .r { color: var(--ok); } .w { color: var(--bad); }
+  .r { color: var(--ok); font-weight: 700; } .w { color: var(--bad); font-weight: 700; }
+  .fake { border-left: 8px solid var(--bad); }
+  .fake .lab { font-family: Bebas, Impact, sans-serif; font-size: 22px; color: var(--bad); }
 </style>
 </head>
 <body>
@@ -79,8 +90,9 @@ function grade(t, d) {
   return out;
 }
 
+const HEAD = (sub) => `<div class="hd"><img src="logo.png" alt="Winterhouse II"><div><div class="kicker">Winterhouse II · Mission 3 <span>· The Yearbook${pilot ? ' · PILOT' : ''}</span></div><h1>Scoreboard</h1></div></div><div class="sect"><i></i>${sub || ''}</div>`;
 function gate(msg) {
-  app.innerHTML = `<div class="kicker">Winterhouse · Season II</div><h1>Scoreboard</h1>
+  app.innerHTML = HEAD('') + `
     <div class="gate card"><div>Enter the GM key</div><input id="k" autocomplete="off" value="${esc(key)}"><button class="btn" id="go">Open</button>
     ${msg ? `<p class="err">${esc(msg)}</p>` : ''}</div>`;
   const go = () => { key = document.getElementById('k').value.trim(); try { localStorage.setItem('wh-yb-gm', key); } catch (e) {} fetchData(); };
@@ -106,12 +118,10 @@ function draw() {
   const rows = ['1', '2', '3', '4', '5'].map(t => ({ t, d: data[t], g: data[t] ? grade(t, data[t]) : null }));
   rows.sort((a, b) => ((b.g ? b.g.total + (reveal && b.g.memOk ? 1 : 0) : -1) - (a.g ? a.g.total + (reveal && a.g.memOk ? 1 : 0) : -1)) || (+a.t - +b.t));
   const anyDone = rows.some(r => r.d && r.d.final);
-  app.innerHTML = `<div class="kicker">Winterhouse · Season II · Mission 3${pilot ? ' · PILOT' : ''}</div><h1>The Yearbook Scoreboard</h1>
-    <div class="bar"><span>${last ? 'Updated ' + last.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · refreshes every 15 s' : ''}</span>
+  app.innerHTML = HEAD(`<div class="bar"><span>${last ? 'Updated ' + last.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + ' · refreshes every 15 s' : ''}</span>
       <button class="btn" id="ref">Refresh</button>
-      <button class="btn gold" id="rev">${reveal ? 'Hide the fake' : 'Reveal the fake memory'}</button></div>
-    ${err ? `<p class="err" style="text-align:center">${esc(err)}</p>` : ''}
-    ${reveal ? `<div class="card"><div class="kicker" style="text-align:left">The fake memory</div><div style="font-style:italic;margin-top:6px">${esc(YB.fakeMemory)}</div></div>` : ''}
+      <button class="btn gold" id="rev">${reveal ? 'Hide the fake' : 'Reveal the fake memory'}</button></div>`) + `    ${err ? `<p class="err" style="text-align:center">${esc(err)}</p>` : ''}
+    ${reveal ? `<div class="card fake"><div class="lab">The fake memory</div><div style="font-style:italic;margin-top:4px">${esc(YB.fakeMemory)}</div></div>` : ''}
     ${rows.map((r, i) => {
       if (!r.d) return `<div class="card row"><div class="place">–</div><div><div class="team">Team ${r.t}</div><div class="status">Not started</div></div><div></div></div>`;
       const g = r.g, names = String(r.d.names || '').split('|').filter(Boolean).join(' · ');
