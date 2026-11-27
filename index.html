@@ -31,8 +31,10 @@
   .lede { color: var(--slate); margin: 0 0 6px; font-size: 16px; }
   .hint { font-size: 13px; color: var(--slate); font-style: italic; margin: 0 0 16px; }
   .progress { display: flex; gap: 5px; margin: 14px 0 0; }
-  .progress span { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
-  .progress span.on { background: var(--navy); }
+  .progress span { flex: 1; height: 21px; padding: 8px 0; background: var(--line); background-clip: content-box; border-radius: 3px; cursor: pointer; }
+  .progress span.done { background-color: var(--sky); }
+  .progress span.on { background-color: var(--navy); }
+  .btn.ghost { background: var(--pale); color: var(--navy); }
   .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin: 0 0 16px; box-shadow: 0 2px 8px rgba(1,41,91,.05); }
   .card .num { display: inline-block; font-size: 12px; font-weight: 900; letter-spacing: .06em; color: #fff; background: var(--navy); padding: 3px 9px; border-radius: 4px; margin-bottom: 8px; }
   .card img, .card video { width: 100%; display: block; border-radius: 8px; background: #E9EEF5; }
@@ -73,9 +75,9 @@
   .flag.no { background: var(--badbg); color: var(--bad); }
   .small { font-size: 13px; color: var(--slate); text-align: center; margin-top: 14px; }
   .reveal { margin-top: 10px; }
-  .ft { display: flex; align-items: center; gap: 12px; margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 10px; font-weight: 900; color: var(--navy); line-height: 1.25; letter-spacing: .04em; }
-  .ft img { width: 34px; }
-  .ft span { border-left: 1px solid var(--line); padding-left: 10px; }
+  .ft { display: flex; align-items: center; justify-content: center; gap: 0; margin-top: 26px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 10px; font-weight: 900; color: var(--navy); line-height: 1.25; letter-spacing: .04em; }
+  .ft span { padding: 0 14px; text-align: center; }
+  .ft span + span { border-left: 1px solid var(--navy); }
   .tl { display: grid; gap: 10px; }
   .tlrow { display: flex; align-items: center; gap: 10px; padding: 8px; margin: 0; user-select: none; -webkit-user-select: none; touch-action: pan-y; }
   .tlrow.drag { position: relative; z-index: 5; box-shadow: 0 12px 28px rgba(1,41,91,.28); outline: 2px solid var(--blue); }
@@ -99,7 +101,7 @@
 </head>
 <body>
 <main id="app"></main>
-<div class="bar" id="bar" hidden><div class="in"><span class="note" id="note"></span><button class="btn" id="go"></button></div></div>
+<div class="bar" id="bar" hidden><div class="in"><button class="btn ghost" id="back" hidden>Back</button><span class="note" id="note"></span><button class="btn" id="go"></button></div></div>
 <script>
 const STEPS = [
   { key: 'timeline', title: 'Class Timeline', lede: 'Drag the photos into order: earliest at the top, most recent at the bottom.' },
@@ -130,6 +132,7 @@ function sync(final) {
     .then(r => r.ok).catch(() => false);
 }
 
+const back = document.getElementById('back');
 const app = document.getElementById('app'), bar = document.getElementById('bar'), note = document.getElementById('note'), go = document.getElementById('go');
 const el = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
 const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -140,9 +143,13 @@ function header(sub) {
     <div class="kicker">Winterhouse II · Mission 3${S.team ? ` <span>· Team ${esc(S.team)}</span>` : ''}</div><h1>The Yearbook</h1>${sub || ''}</header>`;
 }
 function footer() {
-  return `<div class="ft"><img src="logo.png" alt=""><span>WINTERHOUSE II<br>SEASON II</span><span>THE YEARBOOK<br>MISSION 3</span></div>`;
+  return `<div class="ft"><span>WINTERHOUSE II<br>SEASON II</span><span>THE YEARBOOK<br>MISSION 3</span></div>`;
 }
-function progress(i) { return `<div class="progress">${STEPS.map((_, j) => `<span class="${j <= i ? 'on' : ''}"></span>`).join('')}</div>`; }
+function progress(i) { return `<div class="progress">${STEPS.map((_, j) => `<span data-j="${j}" class="${j === i ? 'on' : (answered(STEPS[j].key) === count(STEPS[j].key) ? 'done' : '')}" title="${STEPS[j].title}"></span>`).join('')}</div>`; }
+function answered(key) {
+  if (key === 'who') return Object.entries(S.ans.who || {}).filter(([i, v]) => R('who')[i] && (v || []).filter(Boolean).length === R('who')[i].names.length).length;
+  return Object.keys(S.ans[key] || {}).length;
+}
 
 function R(key) { return (key === 'hear') ? YB.hear : (YB.teams[S.team] || YB.teams['1'])[key]; }
 function count(key) { return key === 'memory' ? 1 : R(key).length; }
@@ -175,21 +182,27 @@ function renderStart() {
   });
   c.querySelectorAll('input').forEach(x => x.oninput = () => { S.names = [...c.querySelectorAll('input')].map(y => y.value).join('|'); if (S.team) save(); });
   app.appendChild(c);
-  app.appendChild(el(`<div class="card"><div class="q">How it works</div><p style="margin:4px 2px">Seven rounds. Every right answer puts a quarter in the prize pot. Lock in each round when you’re sure, because you can’t go back.</p><p style="margin:4px 2px">The last round hides one fake memory planted by the Traitors. If at least three teams catch it, the best team earns the group a <b>Seer</b>.</p></div>`));
+  app.appendChild(el(`<div class="card"><div class="q">How it works</div><p style="margin:4px 2px">Seven rounds. Every right answer puts a quarter in the prize pot. Move back and forth between rounds and change answers as often as you like. When you’re done, submit once at the end. After that, it’s final.</p><p style="margin:4px 2px">The last round hides one fake memory planted by the Traitors. If at least three teams catch it, the best team earns the group a <b>Seer</b>.</p></div>`));
   app.insertAdjacentHTML('beforeend', footer());
   note.textContent = S.team ? '' : 'Pick your team number';
   go.textContent = S.step >= 0 ? 'Continue' : 'Start';
   go.className = 'btn gold';
   go.disabled = !S.team;
+  back.hidden = true;
   go.onclick = () => { if (S.step < 0) S.step = 0; if (params.has('pilot')) S.pilot = true; save(); sync(false); render(); };
 }
 
+function refreshUI(key) {
+  note.textContent = `${answered(key)} of ${count(key)} answered`;
+  const pr = app.querySelector('.progress'); if (pr) pr.outerHTML = progress(S.step);
+}
+function rerender() { const y = scrollY; render(); scrollTo(0, y); }
 function option(key, i, v, label, cls) {
   const a = (S.ans[key] || {})[i], locked = S.locked[key];
   let k = 'opt ' + (cls || '');
   if (a === v) k += ' sel';
   const b = el(`<button class="${k}" ${locked ? 'disabled' : ''}>${esc(label)}</button>`);
-  b.onclick = () => { S.ans[key] = S.ans[key] || {}; S.ans[key][i] = v; save(); render(); };
+  b.onclick = () => { S.ans[key] = S.ans[key] || {}; S.ans[key][i] = v; save(); b.parentNode.querySelectorAll('.opt').forEach(x => x.classList.toggle('sel', x === b)); refreshUI(key); };
   return b;
 }
 
@@ -209,12 +222,12 @@ function renderTimeline(wrap, locked) {
   });
   wrap.appendChild(list);
   if (locked) return;
-  const commit = () => { S.tl = [...list.children].map(r => +r.dataset.p); setAns(); render(); };
+  const commit = () => { S.tl = [...list.children].map(r => +r.dataset.p); setAns(); rerender(); };
   list.addEventListener('click', e => {
     const b = e.target.closest('.mv'); if (!b) return;
     const pos = [...list.children].indexOf(b.closest('.tlrow')), to = pos + (+b.dataset.d);
     if (to < 0 || to >= S.tl.length) return;
-    [S.tl[pos], S.tl[to]] = [S.tl[to], S.tl[pos]]; setAns(); render();
+    [S.tl[pos], S.tl[to]] = [S.tl[to], S.tl[pos]]; setAns(); rerender();
   });
   let drag = null;
   list.addEventListener('pointerdown', e => {
@@ -249,10 +262,10 @@ function renderStep() {
       const cur = ((S.ans.who || {})[i]) || [];
       const c = el(`<div class="card"><div class="num">PHOTO ${i + 1} · ${it.names.length} ${it.names.length === 1 ? 'PERSON' : 'PEOPLE'}</div><img src="${it.img}" alt="" loading="lazy">${it.q ? `<div class="q">${esc(it.q)}</div>` : ''}<div class="opts"></div></div>`);
       it.names.forEach((_, k) => {
-        const sel = el(`<select class="opt" ${locked ? 'disabled' : ''}><option value="">Person ${k + 1}…</option>${YB.people.map(p => `<option ${cur[k] === p ? 'selected' : ''}>${p}</option>`).join('')}</select>`);
+        const sel = el(`<select class="opt" ${locked ? 'disabled' : ''}><option value="">Pick a name…</option>${YB.people.map(p => `<option ${cur[k] === p ? 'selected' : ''}>${p}</option>`).join('')}</select>`);
         sel.onchange = () => {
           const arr = (((S.ans.who || {})[i]) || []).slice(); arr[k] = sel.value;
-          S.ans.who = S.ans.who || {}; S.ans.who[i] = arr; save(); render();
+          S.ans.who = S.ans.who || {}; S.ans.who[i] = arr; save(); refreshUI('who');
         };
         c.querySelector('.opts').appendChild(sel);
       });
@@ -279,27 +292,27 @@ function renderStep() {
     (YB.teams[S.team] || YB.teams['1']).memories.forEach((m, j) => {
       let cls = 'memory' + (a === j ? ' sel' : '');
       const b = el(`<button class="${cls}" ${locked ? 'disabled' : ''}>${a === j ? '<span class="tag">FLAGGED AS FAKE</span>' : ''}${esc(m)}</button>`);
-      b.onclick = () => { S.ans.memory = { 0: j }; save(); render(); };
+      b.onclick = () => { S.ans.memory = { 0: j }; save(); rerender(); };
       wrap.appendChild(b);
     });
   }
   app.appendChild(wrap);
   app.insertAdjacentHTML('beforeend', footer());
-  const done = key === 'who'
-    ? Object.entries(S.ans.who || {}).filter(([i, v]) => R('who')[i] && v.filter(Boolean).length === R('who')[i].names.length).length
-    : Object.keys(S.ans[key] || {}).length, need = count(key);
-  if (locked) {
-    note.textContent = 'Locked in';
-    go.textContent = S.step < STEPS.length - 1 ? 'Next round' : 'See results';
-    go.className = 'btn gold'; go.disabled = false;
-    go.onclick = () => { S.step++; save(); render(); scrollTo(0, 0); };
+  const done = answered(key), need = count(key), last = S.step === STEPS.length - 1;
+  const go2 = j => { S.step = j; save(); sync(false); render(); scrollTo(0, 0); };
+  back.hidden = S.step === 0; back.onclick = () => go2(S.step - 1);
+  note.textContent = `${done} of ${need} answered`;
+  if (!last) {
+    go.textContent = 'Next'; go.className = 'btn'; go.disabled = false;
+    go.onclick = () => go2(S.step + 1);
   } else {
-    note.textContent = `${done} of ${need} answered`;
-    go.textContent = 'Lock in'; go.className = 'btn'; go.disabled = done < need;
+    go.textContent = 'Submit'; go.className = 'btn gold'; go.disabled = false;
     go.onclick = () => {
-      if (!confirm('Lock in this round? You can’t change your answers after this.')) return;
-      S.locked[key] = true; save(); sync(key === 'memory');
-      if (key === 'memory') { S.step++; save(); render(); scrollTo(0, 0); } else { render(); scrollTo(0, 0); }
+      const missing = STEPS.reduce((n, st) => n + (count(st.key) - answered(st.key)), 0);
+      const msg = missing ? `You still have ${missing} unanswered question${missing > 1 ? 's' : ''}. Submit anyway? This is final.` : 'Submit your yearbook? This is final. You can’t change answers after this.';
+      if (!confirm(msg)) return;
+      STEPS.forEach(st => { S.locked[st.key] = true; });
+      S.final = true; S.step = STEPS.length; save(); render(); scrollTo(0, 0);
     };
   }
 }
@@ -328,7 +341,7 @@ function renderEnd() {
 function render() {
   if (S.step < 0 || !S.team) return renderStart();
   bar.hidden = false;
-  if (S.step >= STEPS.length) return renderEnd();
+  if (S.final || S.step >= STEPS.length) return renderEnd();
   renderStep();
 }
 function openLB(src) {
@@ -344,6 +357,7 @@ function openLB(src) {
   };
   sc.onclick = close; o.querySelector('.lbx').onclick = close;
 }
+app.addEventListener('click', e => { const p = e.target.closest('.progress span[data-j]'); if (p && !S.final) { S.step = +p.dataset.j; save(); sync(false); render(); scrollTo(0, 0); } });
 app.addEventListener('click', e => { const im = e.target.closest('.card img'); if (!im || im.closest('.tlrow')) return; openLB(im.src); });
 render();
 </script>

@@ -80,7 +80,8 @@ function grade(t, d) {
     const n = items(t, k).length, locked = !!(d.locked || {})[k], a = (d.ans || {})[k] || {};
     let s = 0; const detail = [];
     for (let i = 0; i < n; i++) { const ok = a[i] !== undefined && correct(t, k, i, a[i]); if (ok) s++; detail.push(ok); }
-    out.rounds.push({ k, label, n, s, locked, detail });
+    const ans = k === 'who' ? Object.values(a).filter(v => (v || []).some(Boolean)).length : Object.keys(a).length;
+    out.rounds.push({ k, label, n, s, locked, detail, ans });
     out.max += n; if (locked) { out.total += s; out.done++; }
   }
   const flagged = ((d.ans || {}).memory || {})[0];
@@ -126,7 +127,7 @@ function draw() {
       if (!r.d) return `<div class="card row"><div class="place">–</div><div><div class="team">Team ${r.t}</div><div class="status">Not started</div></div><div></div></div>`;
       const g = r.g, names = String(r.d.names || '').split('|').filter(Boolean).join(' · ');
       const when = r.d.receivedAt ? new Date(r.d.receivedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-      const status = r.d.final ? `Finished ${when}` : `In progress · ${g.done} of ${ROUNDS.length} rounds locked · last update ${when}`;
+      const status = r.d.final ? `Submitted ${when}` : `Still working · last update ${when} · scores appear once they submit`;
       const mem = g.memLocked
         ? (reveal ? `<span class="chip mem ${g.memOk ? 'ok' : 'no'}">Memory: flagged #${g.flagged + 1} ${g.memOk ? '✓ +1' : '✗'}</span>` : `<span class="chip done">Memory: flagged #${g.flagged + 1}</span>`)
         : `<span class="chip">Memory …</span>`;
@@ -134,7 +135,7 @@ function draw() {
       const det = g.rounds.filter(x => x.locked).map(x => `<li><b>${x.label}:</b> ${x.detail.map((ok, j) => `<span class="${ok ? 'r' : 'w'}">${j + 1}${ok ? '✓' : '✗'}</span>`).join(' ')}</li>`).join('');
       return `<div class="card"><div class="row"><div class="place">${i + 1}</div>
         <div><div class="team">Team ${r.t}</div><div class="names">${esc(names)}</div>
-          <div class="chips">${g.rounds.map(x => `<span class="chip ${x.locked ? 'done' : ''}">${x.label} ${x.locked ? x.s + '/' + x.n : '…'}</span>`).join('')}${mem}</div>
+          <div class="chips">${g.rounds.map(x => `<span class="chip ${x.locked ? 'done' : ''}">${x.label} ${x.locked ? x.s + '/' + x.n : x.ans + ' of ' + x.n + ' answered'}</span>`).join('')}${mem}</div>
           <div class="status">${status}</div></div>
         <div class="total"><b>${total}</b><span>of ${g.max + 1}</span></div></div>
         ${det ? `<details><summary>Question by question</summary><ul>${det}</ul></details>` : ''}</div>`;
